@@ -1,85 +1,84 @@
-## Описание платы.  
-Структурно, схему коммуникации хоста на плате K1 Creality и микроконтролеров можно описать так:
+## Board description.
+Structurally, the host communication scheme on the K1 Creality board and the microcontrollers can be described like this:
 
-![](/images/pcb_overview.jpg "MCU communication") 
+![](/images/pcb_overview.jpg "MCU communication")
 
-От микропроцессора к интересующей нас периферии отходят три порта -   
-- ttyS7 ( к нему подключается микроконтроллер на основной плате, USART1 пины PA2 и PA3 )
-- ttyS1 ( к нему подключается RS232 приемопередатчик SP32222 и далее на плату печатающей головки )
-- ttyS9 (к нему подключается RS232 приемопередатчик SP32222 и далее на плату тензодатчиков )  
-- сигнал включения вторичного напряжения 5В  
+From the microprocessor to the peripherals of interest there are three ports:
+- ttyS7 (the microcontroller on the main board is connected to it, USART1 pins PA2 and PA3)
+- ttyS1 (an RS232 transceiver SP3222 is connected to it and then to the print head board)
+- ttyS9 (an RS232 transceiver SP3222 is connected to it and then to the load-cell/force-sensor board)
+- secondary 5V power enable signal
 
-Зеленым и красным на рисунке обозначены логические уровни сигналов - 3.3В и 12В соответственно. USB-UART конвертер и UART выходы одноплатников рассчитаны на 3.3В поэтому мы не можем напрямую подключить кабель от печатающей головы а вместо этого вынуждены подпаиваться к SP3222E. Наша задача - отключить все три ( или два, если не планируется в перспективе заниматься экспериментами с тензодатчиками ) порта, отключить питание Wi-Fi модуля ( чтобы не мешал и не забивал сеть ) и подключить к освободившимся портам USB_UART конвертер.   
-Кроме этого крайне желательно для стабильности отключить сигнал EN от процессора.
+On the picture, green and red mark the logic voltage levels — 3.3V and 12V respectively. The USB-UART converter and the single-board computer UART outputs are designed for 3.3V so we cannot connect the cable from the print head directly; instead we have to solder to the SP3222E. Our task is to disable all three (or two, if you don't plan to experiment with load cells in the future) ports, turn off the Wi‑Fi module power (so it doesn't interfere or saturate the network), and connect the freed ports to a USB-UART converter.
+In addition, it is highly desirable for stability to disable the EN signal from the processor.
 
-## 1. Подключение основного микроконтроллера 
+## 1. Connecting the main microcontroller
 
-Для удобства отключения микроконтроллера от хоста, производитель предусмотрел на плате резисторы с нулевым сопротивлением после включенных последовательно с пинами резисторов на 20 Ом. Таким образом отпаяв два резистора с нулевым сопротивлением и подпаявшись к контактным площадкам мы подключимся к портам через токоограничивающие резисторы.
+For convenience of disconnecting the microcontroller from the host, the manufacturer provided zero-ohm resistors on the board after series 20Ω resistors connected to the pins. Thus, by desoldering two zero-ohm resistors and soldering to the pads we can connect to the ports through the current-limiting resistors.
 
-![](/images/mcu_resistors.jpg "MCU resistors")  
+![](/images/mcu_resistors.jpg "MCU resistors")
 
-Красным отмечены резисторы. которые нужно удалить. Зеленым отмечены точки подключения для USB-UART конвертера. TX UART 1 конвертера подключаем к RX микроконтроллера и, соответственно, RX UART 1 конвертера к TX микроконтроллера. В итоге выглядеть это должно как-то так:
+Red marks the resistors that need to be removed. Green marks the connection points for the USB-UART converter.
 
-![](/images/mcu_connection.jpg "MCU connection")  
+![](/images/mcu_connection.jpg "MCU connection")
 
-## 2. Подключение печатающей головы и платы тензодатчиков
+## 2. Connecting the print head and the load-cell board
 
-Также как и для порта ttyS7, для портов ttyS1 и ttyS9 производитель предусмотрел резисторы с нулевым сопротивлением с обратной стороны печатной платы :
+As with ttyS7, the manufacturer provided zero-ohm resistors for the ttyS1 and ttyS9 ports.
 
-![](/images/sp3222_resistors.jpg "SP3222E resistors")  
+![](/images/sp3222_resistors.jpg "SP3222E resistors")
 
-Нужно отпаять резисторы, отмеченные красным. Далее припаять к микросхеме SP3222E провода от конвертера. Будем припаиватся к пинам с ttl логическим уровнем cогласно даташиту:
+You need to desolder the resistors marked in red. Then solder wires from the converter to the SP3222E IC. We will ...
 
-![](/images/SP3222E_datasheet.jpg "SP3222E datasheet")  
+![](/images/SP3222E_datasheet.jpg "SP3222E datasheet")
 
-T1IN и R1OUT - порт печатающей головы, T2IN и R2OUT - порт платы тензодатчиков.
-Подключаем TX UART2 к T1IN, RX UART2 к R1IN и TX UART3 к T1IN, RX UART3 к R1IN
+T1IN and R1OUT — print head port; T2IN and R2OUT — load-cell board port.
+We connect TX of UART2 to T1IN, RX of UART2 to R1IN and TX of UART3 to T1IN, RX of UART3 to R1IN
 
+![](/images/SP3222E_connection.jpg "SP3222E connection")
 
-![](/images/SP3222E_connection.jpg "SP3222E connection")  
+## 3. Disabling the EN signal
 
-## 3. Отключение сигнала EN
-
-Для возможности перезагрузки микроконтроллеров, на плате предусмотрен транзистор Q5, соединяющий цепь 5V1 и 5V2 вторичного источников питания. В какой-то момент у меня процессор стал включать и выключать это питание с частотой в несколько десятков герц, пришлось внести изменения в схему. 
-Для возможности сохранения возможности подключения к микроконтроллеру SWD программатора нужно изменить схему так, чтобы при подключении программатора Q5 оставался закрытым, но при подаче основного питания открывался. Для этого я подобрал и установил резистор между базой тразистора Q6 и 5V1. Номинал резистора 900К. Кроме этого нужно удалить резистор R39
+To be able to power-cycle the microcontrollers, the board provides a transistor Q5 that connects the 5V1 circuit and ...
+To retain the ability to connect an SWD programmer to the microcontroller you need to change the schem...
 
 ![](/images/EN_mod.jpg "ENABLE mod")
 
-Если подключаться к микроконтроллеру программатором не требуется то можно обойтись одной перемычкой между коллектором и эмиттером транзистора Q6. В этом варианте отпаивать резистор R39 не требуется.
+If connecting a programmer to the microcontroller is not required, a single jumper between ...
 
 ![](/images/Q6_short.jpg "Q6_short")
 
-## 4. Отключение WiFi модуля.  
+## 4. Disabling the WiFi module
 
-Для отключения модуля нужно отпаять дроссель в цепи питания. 
+To disable the module, desolder the choke in the power supply line.
 
-![](/images/WiFi_module.jpg "WiFi")  
+![](/images/WiFi_module.jpg "WiFi")
 
-## 5. Распиновка Bluepill.  
+## 5. Bluepill pinout
 
-Распиновка приведена в [источнике](https://github.com/r2axz/bluepill-serial-monster), приведу тут нужную нам часть:
+The pinout is given in the [source](https://github.com/r2axz/bluepill-serial-monster); here is the part we need:
 
 | Signal |   Direction   |     UART1     |     UART2     |     UART3     |
 |:-------|:-------------:|:--------------|:--------------|:--------------|
 |   RX   |      IN       |      PA10     |      PA3      |      PB11     |
 |   TX   |      OUT      |      PA9      |      PA2      |      PB10     |
 
-Подключаем все порты. Я подключил UART1 к основному микроконтроллеру, UART2 к плате тензодатчиков и UART3 к плате печатающей головы. Конечно, порядок может быть любой. нужно только прописать порядок портов в конфиге.  
+Connect all ports. I connected UART1 to the main microcontroller, UART2 to the load-cell board, and UART3 to the print head board.
 
-GND я подключил от удобно для меня расположенной AMS1117 
+I connected GND to the conveniently located AMS1117 ground.
 
-![](/images/Bluepill_GND.jpg "GND connection") 
+![](/images/Bluepill_GND.jpg "GND connection")
 
-## 6. Подключение хоста к питанию.
+## 6. Powering the host
 
-Я подключил хост через DC-DC преобразователь. К преобразователю припаял кабель с USB type C разъемом для подключения к одноплатнику. Разумеется можно подключить иначе, например просто припаяв провода к одноплатнику или использовать гребенку. 
+I powered the host via a DC-DC converter. I soldered a cable with a USB Type-C connector to the converter for connecting ...
 
 ![](/images/DC-DC.jpg "DC-DC")
 
-## 7 Подключение штатной WiFi антенны.
+## 7. Reusing the stock WiFi antenna
 
-Я переиспользовал штатную антенну, просто отрезав кабель и соединив его с коннектором одноплатника. Конечно такое подключение увеличивает КСВ, вызывает переотражение сигнала в месте пайки, но никакого ухудшения качества связи с принтером я не заметил. 
+I reused the stock antenna by simply cutting off the cable and connecting it to the single-board computer connector. In the end ...
 
 ![](/images/WiFi_antenna.jpg "WiFi antenna")
 
-На этом с апаратной частью работа закончена, можно переходить к [программной](Software.md)
+That completes the hardware part; you can proceed to the [software](Software.md)
