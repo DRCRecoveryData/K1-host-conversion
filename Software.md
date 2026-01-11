@@ -1,45 +1,48 @@
-# Программные изменения, прошивка.
+# Software changes, firmware.
 
-## Предварительные требования:
+## Prerequisites:
 
-Устанавливаем на одноплатник хоста ОС и с помощью [KIAUH](https://github.com/dw-0/kiauh) (или любым другим удобным для вас способом) устанавливаем нужные сервисы - klipper, moonraker, fluidd или mainsall. Для установки KIAUH вводим :
+Install an operating system on the host single-board computer and, using [KIAUH](https://github.com/dw-0/kiauh) (or any other method convenient for you), install the required services. Example:
 
 ```
 sudo apt-get update && sudo apt-get install git -y
 ```  
+
 ```
 cd ~ && git clone https://github.com/dw-0/kiauh.git
 ```   
+
 ```
 ./kiauh/kiauh.sh
 ```
 
-И далее в меню install устанавливаем нужные сервисы.
+Then in the install menu choose the services you need.
 
-На этом этапе прописывать конфиг подключения к MCU не нужно, иначе нужные порты будут заняты и нужно будет вводить команду ```sudo service klipper stop```
-
-## 0. Установка прошивки bluepill-serial-monster
+At this stage you should NOT write the MCU connection config, otherwise the required ports will be occupied and you will have to enter [...]
 
 
-
-## 1. Прошивка бутлоадеров
-
-Для замены бутлоадера нам потребуется скрипт mcu_utils.py из репозитория [cryoz](https://github.com/cryoz/k1_mcu_flasher) а вместо оригинального бутлоадера будем использовать форк katapult от [Arksine](https://github.com/Arksine/katapult) сделанный человеком с ником Fdl3 из [discord чата D3vil Design](https://discord.com/channels/1154500511777693819/1217873195424813177).
+## 0. Installing the bluepill-serial-monster firmware
 
 
-Клонируем нужные нам репозитории:  
+
+## 1. Bootloader flashing
+
+To replace the bootloader we need the script `mcu_utils.py` from the [cryoz](https://github.com/cryoz/k1_mcu_flasher) repository and, instead of the original [...] (the original bootloader is inconvenient because the handshake must be done within 15 seconds, etc.)
+
+Clone the repositories we need:
 
 ```
 cd ~ && git clone https://github.com/cryoz/k1_mcu_flasher
 ```  
 
-Ищем порты к которым у нас подключены микроконтроллеры: 
+Find the ports to which our microcontrollers are connected:
 
 ```
 dmesg | grep tty
 ```
 
-Получаем вывод наподобие
+You will get output similar to:
+
 ```
 [    0.000600] printk: console [tty1] enabled
 [    1.716300] printk: console [ttyS0] disabled
@@ -53,30 +56,28 @@ dmesg | grep tty
 [   14.627703] mtty_probe init device addr: 0x00000000eab98f5e
 [   20.149292] mtty_open device success!
 ```
-В моем случае UART1-3 конвертера определились в системе как ttyACM0-ttyACM2.  
 
-В качестве замены неудобного оригинального бутлоадера (он неудобен тем что handshake нужно сделать в течение 15 секунд после включения микроконтроллера, в этот момент одноплатник еще не успеет загрузится, а значит для обновления прошивки нужно лезть в подвал принтера и вручную скидывать питание) мы будем использовать форк katapult который изменен таким образом, что может быть загружен через бутлоадер от creality. Кроме того он скомпилирован в deploy режиме, и после установки заменяет собой бутлоадер от creality.  
+In my case UART1-3 of the converter were detected by the system as `ttyACM0`–`ttyACM2`.  
 
-Скачиваем на одноплатник [файл прошивки](/binaries/deployer.bin)
+To replace the inconvenient original bootloader (it is inconvenient because the handshake must be completed within 15 seconds, [...] ), download the firmware file to the single-board computer: [/binaries/deployer.bin](/binaries/deployer.bin)
 
+To flash katapult we use the `mcu_utils.py` script.
 
-Для прошивки katapult используем скрипт mcu_utils.py.
-
-Переходим в папку со скриптом 
+Go to the folder with the script:
 
 ```
 cd ~/k1_mcu_flasher
 ```
 
-Перезагружаем материнскую плату (я просто снял на несколько секунд предохранитель с материнской платы и поставил обратно) и в течение 15 секунд успеваем запустить скрипт который переведет бутлоадер в режим ожидания прошивки:
+Reboot the motherboard (I simply removed the fuse from the motherboard for a few seconds and put it back [...])
 
 ```
 python3 mcu_util.py -c -i /dev/ttyACM2 -g -v
 ```
 
-Где `/dev/ttyACM2` наш порт к которому подключен микроконтроллер для прошивки. В моем случае ttyACM2 это порт микроконтроллера головы. 
+Where `/dev/ttyACM2` is the port to which the microcontroller for flashing is connected. In my case `ttyACM2` is the port of the microcontroller for flashing the bootloader.
 
-Если все успешно, то получаем вывод в консоль:
+If everything is successful, you will get console output:
 
 ```
 send handshake
@@ -87,13 +88,14 @@ rcv data b'6e6f7a305f3132305f4733302d6e6f7a305f3030335f303030e8'
 version received! b'noz0_120_G30-noz0_003_000'
 FW Version: noz0_120_G30-noz0_003_000
 ```
-После этого запускаем скрипт прошивки deployer.bin
+
+After that, run the script to flash `deployer.bin`:
 
 ```
 python3 mcu_util.py -c -i /dev/ttyACM2 -v -u -f ~/deployer.bin
 ```
 
-Если все успешно то получаем вывод:
+If everything is successful you will get:
 
 ```
 send handshake
@@ -116,16 +118,15 @@ send app_start request
 rcv data b'758a'
 app started!
 App started
-
 ```
 
-Проверяем, что katapult установился:
+Check that katapult was installed:
 
 ```
 python3 ~/katapult/scripts/flashtool.py -d /dev/ttyACM2 -b 230400 -s
 ```
 
-Если все успешно то вывод :
+If successful the output will be:
 
 ```
 Connecting to Serial Device /dev/ttyACM2, baud 230400
@@ -138,56 +139,58 @@ Application Start: 0x8002000
 MCU type: stm32f103xe
 Status Request Complete
 ```
-Повторяем прошивку для основного микроконтроллера - опять перезагружаем материнскую плату и запускаем 
+
+Repeat the flashing process for the main microcontroller — again reboot the motherboard and run:
 
 ```
 python3 mcu_util.py -c -i /dev/ttyACM0 -g -v
 ```
 
-Затем 
+Then:
 
 ```
 python3 mcu_util.py -c -i /dev/ttyACM0 -v -u -f ~/deployer.bin
 ```
 
-Теперь бутлоадеры прошиты, можно приступать к сборке и прошивке бинарников klipper. 
+Now the bootloaders are flashed and you can proceed to building and flashing Klipper binaries. 
 
-## 3. Прошивка klipper
+## 3. Flashing Klipper
 
-### 3.1 Плата печатающей головы
+### 3.1 Toolhead board
 
-Переходим в папку с klipper и запускаем make menuconfig (или можно в KIAUH выбрать "Advanced" - "Build")
+Go to the klipper folder and run `make menuconfig` (or in KIAUH choose "Advanced" - "Build")
 
 ```
 cd ~/klipper
 ```  
+
 ```
 make menuconfig
 ```
 
-Выбираем как на скриншоте:
+Select options as shown in the screenshot:
 
 ![](/images/nozzle_mcu_menuconfig.jpg "toolhead menuconfig")
 
-Выходим с сохранением настроек и запускаем сборку
+Exit and save the settings, then build:
 
 ```
 make
 ```
 
-Теперь прошиваем получившийся бинарник  
+Now flash the resulting binary:
 
 ```
 python3 ~/katapult/scripts/flashtool.py -d /dev/ttyACM2 -b 230400 -s
 ```
 
-Далее
+Then:
 
 ```
 python3 ~/katapult/scripts/flashtool.py -d /dev/ttyACM2 -b 230400 -f ~/klipper/out/klipper.bin
 ```  
 
-Вывод должен быть:
+The output should be:
 
 ```
 Connecting to Serial Device /dev/ttyACM2, baud 230400
@@ -210,18 +213,20 @@ Verifying (block count = 531)...
 
 Verification Complete: SHA = 9A0A75F1987338EE8D4E1A5736E793B1E63E8914
 Programming Complete
-
 ```
 
-### 3.2 Основной микроконтроллер
+### 3.2 Main microcontroller
 
-Повторяем все то же самое что и в предыдущем пункте, только выбираем нужный порт ( у меня ttyACM0) и настраиваем сборку согласно скриншоту
+Repeat the same steps as in the previous item, but choose the appropriate port (for me it is `ttyACM0`) and configure the build for the main MCU [...]
 
 ![](/images/main_mcu_menuconfig.jpg "mcu menuconfig")
 
 
-## 4. Базовый минимальный конфиг
+## 4. Basic minimal config
 
-Для проверки можно использовать мой минимальный конфиг. Он подразумевает что у вас установлен CRTouch, модуль [Klippain](https://github.com/Frix-x/klippain-shaketune), замененные шкивы.
+For verification you can use my minimal config. It assumes you have CRTouch installed, the [Kli[...] module, and so on.
 
-[Конфиг](/config/)
+[Config](/config/)
+
+``` 
+``` 
