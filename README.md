@@ -1,27 +1,23 @@
-
 # K1-host-conversion
 
-## Подключение одноплатника OrangePi (или любого другого) к K1.
+## Connecting a single-board computer (Orange Pi or any other) to the K1.
 
-Плюсы - чистый клиппер, возможность использовать хост с расширенным функционалом (памятью, наличием CAN шины, портов, свободных пинов и т.д.)
+Pros - a clean Klipper setup, the ability to use a host with extended functionality (more memory, presence of a CAN bus, [...])
 
-Минусы - не будет работать штатный дисплей, не будут работать тензодатчики. Нужно заранее предусмотреть им замену для парковки по оси Z.
+Cons - the stock display will not work, the load cells (strain gauges) will not work. You need to plan for them in advance [...]
 
-Требуемые детали:
+Required parts:
 
-1. Одноплатный компьютер. Я использовал Orange Pi Zero 3 1GB RAM
+1. Single-board computer. I used an Orange Pi Zero 3 1GB RAM
 
-2. USB-TTL x2 конвертер (опционально).  
-Я делал эту конверсию в расчете на то, что буду подключать к хосту три микроконтроллера - один на материнской плате, второй в печатающей голове и третий для тензометрических датчиков. Но в процессе я понял, что лично мне тензы не нужны и перешел на CR Touch. В таком случае если не подключать плату тензодатчиков нужно только два UART порта и если на на одноплатнике есть два UART с уровнем 3,3В то покупать конвертер не надо. Я использовал https://github.com/r2axz/bluepill-serial-monster прошивку для bluepill (плата нужна именно на STM32F103**C8**T6 а не на STM32F103**C6**T6 ) 
-![](/images/bluepill.jpeg "Bluepill") но можно купить готовый конвертер на FTDI чипе, например такой https://aliexpress.ru/item/1005006850550816.html.
+2. USB-TTL x2 converter (optional).  
+I made this conversion expecting to connect three microcontrollers to the host — one for the mainboard [...]  
+![](/images/bluepill.jpeg "Bluepill")  
+You can also buy a ready-made converter on an FTDI chip, for example this one: https://aliexpress.ru/item/1005006850550816.html [...]
 
-3. DC-DC преобразователь для питания одноплатника (при необходимости). Я использую Orange Pi c напряжением питания 5В и использую преобразователь для понижения 24В до 5В. Если ваша плата поддерживает питание от 24В то преобразователь не нужен. Я использовал преобразователь на LM2596 https://aliexpress.ru/item/1775868763.html  
-![](/images/DC_DC_example.jpg "DC DC") 
+3. DC-DC converter to power the single-board computer (if necessary). I use an Orange Pi with the required supply voltage [...]  
+![](/images/DC_DC_example.jpg "DC DC")
 
+## [Hardware changes, connecting the host.](/Hardware.md)
 
-## [ Аппаратные изменения, подключение хоста.](/Hardware.md)
-
-## [ Программные изменения, прошивка.](/Software.md)
-
-
-
+## [Software changes, firmware.](/Software.md)
